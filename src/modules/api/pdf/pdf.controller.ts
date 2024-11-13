@@ -59,7 +59,7 @@ class PdfController extends BaseController {
                     console.log(`Trang ${page} đã được chuyển đổi: ${result}`);
                 }).catch((error) => {
                     console.error(`Lỗi khi chuyển đổi trang ${page}:`, error);
-                });
+                })
             );
         }
 
