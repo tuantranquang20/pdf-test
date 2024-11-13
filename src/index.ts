@@ -1,28 +1,36 @@
-import { Elysia } from "elysia";
+import {Elysia} from "elysia";
 import cors from '@elysiajs/cors';
 import bearer from '@elysiajs/bearer';
 import swagger from '@elysiajs/swagger';
-import { registerControllers } from './server';
+import {registerControllers} from './server';
 import {
     ErrorMessages,
     gracefulShutdown,
-    requestLogger,
     bootLogger,
 } from './utils';
-import path from 'path';
-import fs from 'fs';
+import {logger} from "@tqman/nice-logger";
+
+import {createElement} from "react";
+import App from './react/App'
+import {renderToReadableStream} from 'react-dom/server.browser'
+import fs from "fs";
+import path from "path";
+
+await Bun.build({
+    entrypoints: ['./src/react/index.tsx'],
+    outdir: './public',
+});
 
 try {
     const app = new Elysia()
         .use(cors())
         .use(swagger())
         .use(bearer())
+        .use(logger({
+            mode: "live", // "live" or "combined" (default: "combined")
+        }))
         .onStop(gracefulShutdown)
-        .onError(({ code, error, set }) => ErrorMessages(code, error, set))
-        .get('/', (ctx) => {
-            const indexPath = path.join(__dirname, 'src', 'index.html');
-            return fs.readFileSync(indexPath, 'utf-8');
-        })
+        .onError(({code, error, set}) => ErrorMessages(code, error, set))
         .get('/public/*', (ctx) => {
             const filePath = path.join(process.cwd(), 'public', ctx.params['*']);
             if (fs.existsSync(filePath)) {
@@ -34,9 +42,19 @@ try {
             } else {
                 return new Response('File not found', { status: 404 });
             }
-        });
+        })
+        .get('/', async () => {
+            // create our react App component
+            const app = createElement(App)
+            const stream = await renderToReadableStream(app, {
+                bootstrapScripts: ['/public/index.js']
+            })
+            return new Response(stream, {
+                headers: {'Content-Type': 'text/html'}
+            })
+        })
 
-   const getContentType = (filePath) => {
+    const getContentType = (filePath) => {
         const ext = path.extname(filePath).toLowerCase();
         const mimeTypes = {
             '.jpg': 'image/jpeg',
@@ -56,7 +74,7 @@ try {
 
         return mimeTypes[ext] || 'application/octet-stream'; // Fallback cho các loại không xác đ
     };
-    
+
     // user routes and middlewates
     registerControllers(app);
     process.on('SIGINT', app.stop);
