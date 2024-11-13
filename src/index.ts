@@ -24,10 +24,37 @@ try {
             return fs.readFileSync(indexPath, 'utf-8');
         })
         .get('/public/*', (ctx) => {
-            const filePath = path.join(__dirname, 'src', ctx.path.replace('/public/', ''));
-            return fs.readFileSync(filePath);
-        })
+            const filePath = path.join(process.cwd(), 'public', ctx.params['*']);
+            if (fs.existsSync(filePath)) {
+                return new Response(fs.readFileSync(filePath), {
+                    headers: {
+                        'Content-Type': getContentType(filePath), // Set appropriate content type
+                    },
+                });
+            } else {
+                return new Response('File not found', { status: 404 });
+            }
+        });
 
+    const getContentType = (filePath) => {
+        const ext = path.extname(filePath).toLowerCase();
+        switch (ext) {
+            case '.jpg':
+            case '.jpeg':
+                return 'image/jpeg';
+            case '.png':
+                return 'image/png';
+            case '.gif':
+                return 'image/gif';
+            case '.svg':
+                return 'image/svg+xml';
+            case '.pdf':
+                return 'application/pdf';
+            default:
+                return 'application/octet-stream'; // Fallback for unknown types
+        }
+    };
+    
     // user routes and middlewates
     registerControllers(app);
     process.on('SIGINT', app.stop);
