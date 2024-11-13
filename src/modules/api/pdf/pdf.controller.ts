@@ -57,6 +57,7 @@ class PdfController extends BaseController {
                     promises.push(
                         pdfToPic(page).then((result) => {
                             console.log(`Trang ${page} đã được chuyển đổi: ${result}`);
+                            return result; 
                         }).catch((error) => {
                             console.error(`Lỗi khi chuyển đổi trang ${page}:`, error);
                         })
@@ -65,7 +66,7 @@ class PdfController extends BaseController {
     
                 const results: images = await Promise.all(promises);
                 results.map((image: image) => {
-                    image.path = `${outputDir}/${image.name}`;
+                    image.path = `/public/storage/${folderName}/${image.name}`;
                     return image;
                 })
                 return { message: results };
