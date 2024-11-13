@@ -6,6 +6,15 @@ import fs from 'fs';
 import { PDFDocument } from 'pdf-lib';
 import path from 'path';
 
+type image = {
+    name: string,
+    size: string,
+    filesize: number,
+    path: string,
+    page: number,
+}
+
+type images = Array<image>
 
 class PdfController extends BaseController {
     routes = [];
@@ -16,48 +25,50 @@ class PdfController extends BaseController {
 
     @Post('/upload', {response: {}})
     async show({body}: { body: uploadFilePdf }) {
+
         const baseDir = "public/storage/";
-        const pdfPath = `${baseDir}${crypto.randomUUID()}.pdf`;
-        await Bun.write(pdfPath, body.file);
-        const folderName = crypto.randomUUID()
+        const folderName = crypto.randomUUID();
         const outputDir = path.join(process.cwd(), `public/storage/${folderName}`);
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+        const pdfPath = `${baseDir}${crypto.randomUUID()}.png`;
+        await Bun.write(pdfPath, body.file);
+
+        if (!fs.existsSync(outputFolder)) {
+            fs.mkdirSync(outputFolder, { recursive: true });
         }
-        // Load the PDF document to get the page count
-        const pdfBytes = fs.readFileSync(pdfPath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const numPages = pdfDoc.getPageCount();
+
 
         const options = {
-            density: 1000,
-            savePath: outputDir,
-            format: 'png',
-            width: 600,
-            height: 800,
+            density: 500, // Độ phân giải ảnh
+            savePath: outputFolder, // Thư mục lưu ảnh
+            format: "png", // Định dạng ảnh (png, jpeg)
+            width: 600, // Chiều rộng ảnh
+            height: 800 // Chiều cao ảnh
         };
+        const pdfToPic = pdf2pic.fromPath(pdfPath, options);
 
-        const pdfToPic = fromPath(pdfPath, options);
+        // Lấy số trang từ file PDF
+        const pdfBytes = await fs.promises.readFile(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const totalPages = pdfDoc.getPageCount();
+
+        // Chuyển đổi từng trang PDF thành ảnh
         const promises = [];
-        for (let i = 1; i <= numPages; i++) {
+        for (let page = 1; page <= totalPages; page++) {
             promises.push(
-                pdfToPic(i).then((resolve) => {
-                    console.log(`Page ${i} converted to image:`, resolve);
-                    return resolve; // Return the resolve to store or log later
-                }).catch((e) => {
-                    console.error(`Error converting page ${i}:`, e);
-                })
+                pdfToPic(page).then((result) => {
+                    console.log(`Trang ${page} đã được chuyển đổi: ${result}`);
+                }).catch((error) => {
+                    console.error(`Lỗi khi chuyển đổi trang ${page}:`, error);
+                });
             );
         }
 
-        let results: images = await Promise.all(promises)
-
+        const results: images = await Promise.all(promises);
         results.map((image: image) => {
-            image.path = `/public/storage/${folderName}/${image.name}`;
+            image.path = `/public/storage/${outputFolder}/${image.name}`;
             return image;
         })
-
-       return { message: results };
+        return { message: results };
     }
 
     @Get('/view',  {response: {}})
