@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../../../public/assets/slideComponent.css'
 
 interface ImageItem {
     name: string;
