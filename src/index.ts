@@ -36,23 +36,25 @@ try {
             }
         });
 
-    const getContentType = (filePath) => {
+   const getContentType = (filePath) => {
         const ext = path.extname(filePath).toLowerCase();
-        switch (ext) {
-            case '.jpg':
-            case '.jpeg':
-                return 'image/jpeg';
-            case '.png':
-                return 'image/png';
-            case '.gif':
-                return 'image/gif';
-            case '.svg':
-                return 'image/svg+xml';
-            case '.pdf':
-                return 'application/pdf';
-            default:
-                return 'application/octet-stream'; // Fallback for unknown types
-        }
+        const mimeTypes = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.svg': 'image/svg+xml',
+            '.pdf': 'application/pdf',
+            '.txt': 'text/plain',
+            '.html': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.json': 'application/json',
+            '.mp4': 'video/mp4',
+            // Thêm định dạng khác nếu cần
+        };
+
+        return mimeTypes[ext] || 'application/octet-stream'; // Fallback cho các loại không xác đ
     };
     
     // user routes and middlewates
