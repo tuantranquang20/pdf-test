@@ -16,44 +16,48 @@ class PdfController extends BaseController {
 
     @Post('/upload', {response: {}})
     async show({body}: { body: uploadFilePdf }) {
-
         const baseDir = "public/storage/";
-        const folderName = crypto.randomUUID();
-        const outputFolder= baseDir + '/' + folderName;
-        const pdfPath = `${baseDir}${crypto.randomUUID()}.png`;
+        const pdfPath = `${baseDir}${crypto.randomUUID()}.pdf`;
         await Bun.write(pdfPath, body.file);
-
-        if (!fs.existsSync(outputFolder)) {
-            fs.mkdirSync(outputFolder, { recursive: true });
+        const folderName = crypto.randomUUID()
+        const outputDir = path.join(process.cwd(), `public/storage/${folderName}`);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
         }
-
+        // Load the PDF document to get the page count
+        const pdfBytes = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const numPages = pdfDoc.getPageCount();
 
         const options = {
-            density: 500, // Độ phân giải ảnh
-            savePath: outputFolder, // Thư mục lưu ảnh
-            format: "png", // Định dạng ảnh (png, jpeg)
-            width: 600, // Chiều rộng ảnh
-            height: 800 // Chiều cao ảnh
+            density: 1000,
+            savePath: outputDir,
+            format: 'png',
+            width: 600,
+            height: 800,
         };
-        const pdfToPic = pdf2pic.fromPath(pdfPath, options);
 
-
-
-        // Lấy số trang từ file PDF
-        const pdfBytes = await fs.promises.readFile(pdfPath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const totalPages = pdfDoc.getPageCount();
-
-        // Chuyển đổi từng trang PDF thành ảnh
-        for (let page = 1; page <= totalPages; page++) {
-            pdfToPic(page).then((result) => {
-                console.log(`Trang ${page} đã được chuyển đổi: ${result}`);
-            }).catch((error) => {
-                console.error(`Lỗi khi chuyển đổi trang ${page}:`, error);
-            });
+        const pdfToPic = fromPath(pdfPath, options);
+        const promises = [];
+        for (let i = 1; i <= numPages; i++) {
+            promises.push(
+                pdfToPic(i).then((resolve) => {
+                    console.log(`Page ${i} converted to image:`, resolve);
+                    return resolve; // Return the resolve to store or log later
+                }).catch((e) => {
+                    console.error(`Error converting page ${i}:`, e);
+                })
+            );
         }
 
-        return pdfPath
+        let results: images = await Promise.all(promises)
+
+        results.map((image: image) => {
+            image.path = `/public/storage/${folderName}/${image.name}`;
+            return image;
+        })
+
+       return { message: results };
     }
 
     @Get('/view',  {response: {}})
