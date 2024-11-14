@@ -1,12 +1,21 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "ES2021",
     "jsx": "react",
+    "jsxFactory": "React.createElement",
+    "jsxFragmentFactory": "React.Fragment",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "types": ["bun-types"],
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": ["src/**/*"]
+    "baseUrl": "./src", // Set base URL to the 'src' directory
+    "paths": {
+      "@utils/*": ["utils/*"],
+      "@modules/*": ["modules/*"],
+      "@middlewares/*": ["middlewares/*"]
+    }
+  }
 }

@@ -2,28 +2,36 @@
   "name": "app",
   "version": "1.0.50",
   "scripts": {
-    "build": "parcel build src/index.html --dist-dir dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts --env NODE_ENV=development"
+  },
+  "bin": {
+    "bun-cli": "./cli.ts"
   },
   "dependencies": {
     "@elysiajs/bearer": "^0.7.0",
     "@elysiajs/cors": "^0.7.1",
-    "@elysiajs/jwt": "^0.7.0",
+    "@elysiajs/jwt": "^0.7.1",
+    "@elysiajs/static": "^1.1.1",
     "@elysiajs/swagger": "^0.7.2",
     "@libsql/client": "^0.3.5",
+    "@prisma/client": "^5.22.0",
+    "@tqman/nice-logger": "^1.0.7",
+    "axios": "^1.7.7",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
     "elysia": "latest",
-    "pdf2pic": "latest",
     "pdf-lib": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "pdf2pic": "latest",
+    "prisma": "^5.22.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.53.2"
   },
   "devDependencies": {
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
     "bun-types": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
     "parcel": "latest"
   },
   "module": "src/index.js"

@@ -1,68 +1,112 @@
-import { Elysia } from "elysia";
+import {Elysia} from "elysia";
 import cors from '@elysiajs/cors';
 import bearer from '@elysiajs/bearer';
 import swagger from '@elysiajs/swagger';
-import { registerControllers } from './server';
-import {
-    ErrorMessages,
-    gracefulShutdown,
-    requestLogger,
-    bootLogger,
-} from './utils';
-import path from 'path';
-import fs from 'fs';
+import {registerControllers} from './server';
+import {ErrorMessages, gracefulShutdown, bootLogger} from './utils';
+import {logger} from "@tqman/nice-logger";
+import {createElement} from "react";
+import App from './react/App';
+import {renderToReadableStream} from 'react-dom/server.browser';
+import fs from "fs";
+import path from "path";
+import {PrismaClient} from '@prisma/client';
+import PrismaService from "../prisma/prisma.service";
+import {jwt} from '@elysiajs/jwt'
+
+// Build React application
+await Bun.build({
+    entrypoints: ['./src/react/index.tsx'],
+    outdir: './public',
+});
+
+// Helper function to determine content type
+const getContentType = (filePath: string): string => {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.pdf': 'application/pdf',
+        '.txt': 'text/plain',
+        '.html': 'text/html',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.json': 'application/json',
+        '.mp4': 'video/mp4',
+        // Add other formats as needed
+    };
+
+    return mimeTypes[ext] || 'application/octet-stream'; // Fallback for unknown types
+};
 
 try {
+
     const app = new Elysia()
-        .use(cors())
+        .use(cors({
+            origin: '*', // Adjust as necessary for your security needs
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+        }))
         .use(swagger())
         .use(bearer())
-        .onStop(gracefulShutdown)
-        .onError(({ code, error, set }) => ErrorMessages(code, error, set))
-        .get('/', (ctx) => {
-            const indexPath = path.join(__dirname, 'src', 'index.html');
-            return fs.readFileSync(indexPath, 'utf-8');
+        .use(logger({mode: "live"}))
+        // .use(
+        //     jwt({
+        //         name: 'jwt',
+        //         secret: 'MY_SECRETS',
+        //         exp: "1w"
+        //     })
+        // )
+        .onStop(async () => {
+            await PrismaService.$disconnect();
+            console.log('Disconnected from the database.');
+            return gracefulShutdown
         })
+        .onError(async ({code, error, set}) => {
+            await PrismaService.$disconnect();
+            return ErrorMessages(code, error, set)
+        })
+
+        // Serve static files
         .get('/public/*', (ctx) => {
             const filePath = path.join(process.cwd(), 'public', ctx.params['*']);
             if (fs.existsSync(filePath)) {
                 return new Response(fs.readFileSync(filePath), {
                     headers: {
-                        'Content-Type': getContentType(filePath), // Set appropriate content type
+                        'Content-Type': getContentType(filePath),
                     },
                 });
-            } else {
-                return new Response('File not found', { status: 404 });
             }
+            return new Response('File not found', {status: 404});
+        })
+
+        // Serve the main React application
+        .get('/', async () => {
+            const appElement = createElement(App);
+            const stream = await renderToReadableStream(appElement, {
+                bootstrapScripts: ['/public/index.js'],
+            });
+            return new Response(stream, {
+                headers: {'Content-Type': 'text/html'},
+            });
         });
 
-   const getContentType = (filePath) => {
-        const ext = path.extname(filePath).toLowerCase();
-        const mimeTypes = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.svg': 'image/svg+xml',
-            '.pdf': 'application/pdf',
-            '.txt': 'text/plain',
-            '.html': 'text/html',
-            '.css': 'text/css',
-            '.js': 'application/javascript',
-            '.json': 'application/json',
-            '.mp4': 'video/mp4',
-            // Thêm định dạng khác nếu cần
-        };
-
-        return mimeTypes[ext] || 'application/octet-stream'; // Fallback cho các loại không xác đ
-    };
-    
-    // user routes and middlewates
+    // Register user routes and middleware
     registerControllers(app);
-    process.on('SIGINT', app.stop);
-    process.on('SIGTERM', app.stop);
+
+    // Handle graceful shutdown
+    const shutdown = () => {
+        app.stop();
+        process.exit(0);
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    // Start the server
     app.listen(process.env.PORT!, bootLogger);
-} catch (e) {
-    console.log('error booting the server');
-    console.error(e);
+} catch (error) {
+    console.error('Error booting the server:', error);
 }
