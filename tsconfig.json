@@ -11,5 +11,11 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
+    "baseUrl": "./src", // Set base URL to the 'src' directory
+    "paths": {
+      "@utils/*": ["utils/*"],
+      "@modules/*": ["modules/*"],
+      "@middlewares/*": ["middlewares/*"]
+    }
   }
 }
