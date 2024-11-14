@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prismaService-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,10 +13,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
   password  String
   name      String?
   createdAt DateTime @default(now())

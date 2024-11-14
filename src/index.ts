@@ -10,7 +10,6 @@ import App from './react/App';
 import {renderToReadableStream} from 'react-dom/server.browser';
 import fs from "fs";
 import path from "path";
-import {PrismaClient} from '@prisma/client';
 import PrismaService from "../prisma/prisma.service";
 import {jwt} from '@elysiajs/jwt'
 
@@ -45,21 +44,17 @@ const getContentType = (filePath: string): string => {
 try {
 
     const app = new Elysia()
-        .use(cors({
-            origin: '*', // Adjust as necessary for your security needs
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
-        }))
+        .use(cors())
         .use(swagger())
         .use(bearer())
         .use(logger({mode: "live"}))
-        // .use(
-        //     jwt({
-        //         name: 'jwt',
-        //         secret: 'MY_SECRETS',
-        //         exp: "1w"
-        //     })
-        // )
+        .use(
+            jwt({
+                name: 'jwt',
+                secret: 'MY_SECRETS',
+                exp: "1w"
+            })
+        )
         .onStop(async () => {
             await PrismaService.$disconnect();
             console.log('Disconnected from the database.');
@@ -84,15 +79,15 @@ try {
         })
 
         // Serve the main React application
-        .get('/', async () => {
-            const appElement = createElement(App);
-            const stream = await renderToReadableStream(appElement, {
-                bootstrapScripts: ['/public/index.js'],
-            });
-            return new Response(stream, {
-                headers: {'Content-Type': 'text/html'},
-            });
-        });
+        // .get('/', async () => {
+        //     const appElement = createElement(App);
+        //     const stream = await renderToReadableStream(appElement, {
+        //         bootstrapScripts: ['/public/index.js'],
+        //     });
+        //     return new Response(stream, {
+        //         headers: {'Content-Type': 'text/html'},
+        //     });
+        // });
 
     // Register user routes and middleware
     registerControllers(app);
