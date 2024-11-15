@@ -1,4 +1,4 @@
-import {t} from 'Elysia';
+import {t} from 'elysia';
 
 export const createUser = t.Object({
     email: t.String({
