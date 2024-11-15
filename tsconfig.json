@@ -16,6 +16,7 @@
       "@utils/*": ["utils/*"],
       "@modules/*": ["modules/*"],
       "@middlewares/*": ["middlewares/*"]
-    }
+    },
+    "include": ["src/**/*", "node_modules/elysia"]
   }
 }

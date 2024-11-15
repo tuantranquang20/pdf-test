@@ -1,4 +1,4 @@
-import {t} from 'Elysia';
+import {t} from 'elysia';
 
 export interface uploadFilePdf {
     file: File;

@@ -13,11 +13,7 @@ import path from "path";
 import PrismaService from "../prisma/prisma.service";
 import {jwt} from '@elysiajs/jwt'
 
-// Build React application
-await Bun.build({
-    entrypoints: ['./src/react/index.tsx'],
-    outdir: './public',
-});
+
 
 // Helper function to determine content type
 const getContentType = (filePath: string): string => {
